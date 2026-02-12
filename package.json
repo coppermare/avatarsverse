@@ -1,17 +1,54 @@
 {
   "name": "avatarverse",
   "version": "0.1.0",
-  "private": true,
+  "description": "Deterministic profile avatar library. Same seed, same avatar. Every time.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:lib": "tsc -p tsconfig.lib.json",
+    "build:next": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
+    "prepublishOnly": "npm run build:lib"
+  },
+  "keywords": [
+    "avatar",
+    "profile-picture",
+    "generator",
+    "deterministic",
+    "svg",
+    "voxel"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coppermare/avatarverse.git"
+  },
+  "bugs": {
+    "url": "https://github.com/coppermare/avatarverse/issues"
+  },
+  "homepage": "https://github.com/coppermare/avatarverse#readme",
+  "license": "MIT",
+  "author": "Kristi Kumrija",
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
-    "next": "15.1.6",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
     "seedrandom": "^3.0.5"
   },
   "devDependencies": {
@@ -21,8 +58,13 @@
     "@types/seedrandom": "^3.0.8",
     "eslint": "^9",
     "eslint-config-next": "15.1.6",
+    "next": "15.1.6",
     "postcss": "^8",
+    "prettier": "^3.8.1",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
     "tailwindcss": "^3.4.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

@@ -1,4 +1,4 @@
-import { createRandom } from "@/core/seed";
+import { createRandom } from "../../seed";
 import { PALETTES } from "./palettes";
 
 export type VoxelTraits = {
