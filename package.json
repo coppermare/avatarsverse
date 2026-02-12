@@ -25,7 +25,8 @@
     "lint": "next lint",
     "test": "vitest run",
     "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\"",
-    "prepublishOnly": "npm run build:lib"
+    "prepublishOnly": "npm run build:lib",
+    "generate-avatars": "node scripts/generate-avatar-manifest.mjs"
   },
   "keywords": [
     "avatar",

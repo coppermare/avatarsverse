@@ -88,6 +88,20 @@ Get a registered style by name. Returns `{ render }` or `null`.
 | ----- | ----------- |
 | `voxel` | Blocky, low-poly aesthetic with varied head shapes, eyes, and color palettes |
 
+## Avatars (Placeholder Pack)
+
+For mockups, prototypes, and placeholders, use the curated avatar pack via CDN. Avatars are organized by category (e.g. voxel).
+
+```
+# Development (latest)
+https://cdn.jsdelivr.net/gh/coppermare/avatarverse/main/avatars/voxel/1.png
+
+# Production (pinned to release)
+https://cdn.jsdelivr.net/gh/coppermare/avatarverse@1.0.0/avatars/voxel/1.png
+```
+
+Add PNG files to `avatars/voxel/` named `1.png`, `2.png`, ... See [avatars/NAMING_EXAMPLES.md](avatars/NAMING_EXAMPLES.md) for the structure. Full usage: [avatars/README.md](avatars/README.md).
+
 ## Deterministic Output
 
 Avatarverse uses a seeded random number generator. For any given `seed` and `options`, the output SVG is always identical. This makes it ideal for:
