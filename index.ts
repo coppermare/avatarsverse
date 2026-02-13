@@ -5,37 +5,40 @@
  * @packageDocumentation
  */
 
-import { render as renderAvatar } from "./core/styles/registry";
-
-export { createRandom } from "./core/seed";
-export { getStyle, render } from "./core/styles/registry";
-export type { AvatarParams } from "./core/utils/params";
-export { parseParams } from "./core/utils/params";
-
-// Re-export voxel style for direct use
-export {
-  createVoxelStyle,
-  type VoxelOptions,
-  type VoxelTraits,
-} from "./core/styles/voxel";
-
-/** Available avatar style names */
-export const STYLES = ["voxel"] as const;
-
-export type StyleName = (typeof STYLES)[number];
+const CDN_BASE = "https://cdn.jsdelivr.net/gh/coppermare/avatarverse";
 
 /**
- * Create a deterministic avatar SVG string.
- * Same seed + options always returns the same output.
- *
- * @param style - Avatar style name (e.g. "voxel")
- * @param seed - Seed string (username, email, ID). Same seed = same avatar
- * @param options - Optional: size (16-512), radius (0-50)
+ * Cyrb53 hash for even distribution of seeds to avatar indices.
+ * @internal
  */
-export function createAvatar(
-  style: StyleName | string,
+export function cyrb53(str: string, seed = 0): number {
+  let h1 = 0xdeadbeef ^ seed;
+  let h2 = 0x41c6ce57 ^ seed;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507);
+  h2 = Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+}
+
+/**
+ * Get a deterministic avatar URL from a seed.
+ * Same seed always returns the same CDN URL.
+ *
+ * @param seed - Any string (username, email, ID)
+ * @param category - Avatar category (default: "voxel")
+ * @param total - Number of avatars in category (default: 15)
+ * @param tag - jsDelivr tag: "main" for latest, or "1.0.0" for pinned release
+ */
+export function avatarUrl(
   seed: string,
-  options?: { size?: number; radius?: number }
+  category = "voxel",
+  total = 15,
+  tag = "main"
 ): string {
-  return renderAvatar(style, seed, options ?? {});
+  const n = (cyrb53(seed) % total) + 1;
+  return `${CDN_BASE}@${tag}/avatars/${category}/${n}.png`;
 }

@@ -2,150 +2,89 @@
 
 Deterministic profile avatar library. Same seed, same avatar. Every time.
 
-Create unique, consistent avatars for user profiles, chat apps, forums, and team tools. Use any string as a seed (username, email, ID) and Avatarverse generates the same avatar across all platforms.
+Pre-made voxel-style PNG avatars for mockups, prototypes, and placeholders. Use any string as a seed (username, email, ID) and get the same avatar URL across all platforms.
 
-Inspired by [DiceBear](https://www.dicebear.com/) with a focus on voxel-style avatars and a simple, developer-friendly API.
+---
 
-## Installation
+## Quick Start
 
-```bash
-npm install avatarverse
-```
+### 1. CDN (no install)
 
-## Usage
-
-### JavaScript / TypeScript
-
-```javascript
-import { createAvatar } from "avatarverse";
-
-// Same seed always produces the same avatar
-const svg = createAvatar("voxel", "user@example.com", { size: 128 });
-// Use the SVG string: inline in React, write to file, etc.
-```
-
-### React
-
-```jsx
-import { createAvatar } from "avatarverse";
-
-function UserAvatar({ seed, size = 64 }) {
-  const svg = createAvatar("voxel", seed, { size });
-  return (
-    <img
-      src={`data:image/svg+xml,${encodeURIComponent(svg)}`}
-      alt={`Avatar for ${seed}`}
-      width={size}
-      height={size}
-    />
-  );
-}
-```
-
-### URL-based (with hosted API or Next.js route)
-
-If you run the Avatarverse app (or host the API), use avatars via URL:
+Use the avatar URL directly in an `<img>` tag:
 
 ```html
 <img
-  src="https://your-domain.com/api/avatar/voxel?seed=alice&size=64"
+  src="https://cdn.jsdelivr.net/gh/coppermare/avatarverse@main/avatars/voxel/1.png"
   alt="Avatar"
   width="64"
   height="64"
 />
 ```
 
-## API
+Replace `1` with `1`–`15` for different avatars. Use `@main` for latest, or `@1.0.0` to pin to a release.
 
-### `createAvatar(style, seed, options?)`
+### 2. NPM package (seed → URL)
 
-Generate a deterministic avatar SVG string.
-
-| Parameter | Type | Required | Description |
-| --------- | ---- | -------- | ----------- |
-| `style` | `string` | Yes | Avatar style name. Current: `"voxel"` |
-| `seed` | `string` | Yes | Any string (username, email, ID). Same seed = same avatar |
-| `options` | `object` | No | Render options |
-
-**Options:**
-
-| Property | Type | Default | Description |
-| -------- | ---- | ------- | ----------- |
-| `size` | `number` | `64` | Output size in pixels (16-512) |
-| `radius` | `number` | `0` | Corner radius 0-50 for rounded avatars |
-
-### `render(style, seed, options?)`
-
-Low-level API. Same as `createAvatar`.
-
-### `getStyle(name)`
-
-Get a registered style by name. Returns `{ render }` or `null`.
-
-## Styles
-
-| Style | Description |
-| ----- | ----------- |
-| `voxel` | Blocky, low-poly aesthetic with varied head shapes, eyes, and color palettes |
-
-## Avatars (Placeholder Pack)
-
-For mockups, prototypes, and placeholders, use the curated avatar pack via CDN. Avatars are organized by category (e.g. voxel).
-
-```
-# Development (latest)
-https://cdn.jsdelivr.net/gh/coppermare/avatarverse/main/avatars/voxel/1.png
-
-# Production (pinned to release)
-https://cdn.jsdelivr.net/gh/coppermare/avatarverse@1.0.0/avatars/voxel/1.png
+```bash
+npm install avatarverse
 ```
 
-Add PNG files to `avatars/voxel/` named `1.png`, `2.png`, ... See [avatars/NAMING_EXAMPLES.md](avatars/NAMING_EXAMPLES.md) for the structure. Full usage: [avatars/README.md](avatars/README.md).
+```javascript
+import { avatarUrl } from "avatarverse";
 
-## Deterministic Output
-
-Avatarverse uses a seeded random number generator. For any given `seed` and `options`, the output SVG is always identical. This makes it ideal for:
-
-- User identities across sessions
-- Consistent avatars before users upload photos
-- Caching (same URL = same image)
-
-## HTTP API (Self-hosted)
-
-The included Next.js app exposes a GET endpoint:
-
-```
-GET /api/avatar/:style?seed=...&size=64&radius=0
+// Same seed always returns the same URL
+const url = avatarUrl("alice@example.com");
+// → https://cdn.jsdelivr.net/gh/coppermare/avatarverse@main/avatars/voxel/7.png
 ```
 
-**Query parameters:**
+```jsx
+// React
+<img
+  src={avatarUrl(seed)}
+  alt={`Avatar for ${userName}`}
+  width={64}
+  height={64}
+/>
+```
 
-| Param | Type | Default | Description |
-| ----- | ---- | ------- | ----------- |
-| `seed` | string | `"default"` | Seed for deterministic generation |
-| `size` | number | `64` | 16-512 |
-| `radius` | number | `0` | 0-50 |
+---
 
-Returns `image/svg+xml` with long-lived cache headers.
+## API Reference
+
+### `avatarUrl(seed, category?, total?, tag?)`
+
+Get a deterministic avatar URL from a seed.
+
+| Parameter | Type   | Default  | Description                                  |
+|-----------|--------|----------|----------------------------------------------|
+| `seed`    | string | required | Any string (username, email, ID)              |
+| `category`| string | `"voxel"`| Avatar category                               |
+| `total`   | number | `15`     | Number of avatars in category                 |
+| `tag`     | string | `"main"` | jsDelivr tag: `"main"` or release e.g. `"1.0.0"` |
+
+---
 
 ## Playground
 
-Run the development server to try avatars interactively:
+Run locally to preview avatars and copy URLs:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000 for the playground.
+Open http://localhost:3000
 
-## Deploy to Vercel
+---
 
-Connect your GitHub repo to [Vercel](https://vercel.com) for automatic deployments. The `vercel.json` is preconfigured for Next.js.
+## Avatars Pack
 
-## Adding Styles
+Pre-made PNG avatars in `avatars/voxel/` (1.png–15.png).
 
-Avatarverse is designed for multiple styles. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to add new avatar styles.
+- **Structure**: [avatars/README.md](avatars/README.md)
+- **Naming**: [avatars/NAMING_EXAMPLES.md](avatars/NAMING_EXAMPLES.md)
+
+---
 
 ## License
 
