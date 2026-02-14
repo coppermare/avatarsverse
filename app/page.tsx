@@ -1,16 +1,22 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { Header } from "./components/Header";
 
-const VOXEL_COUNT = 15;
+/** Images above this index load eagerly for fast LCP; rest use lazy loading */
+const ABOVE_FOLD_COUNT = 8;
 const CDN_BASE = "https://cdn.jsdelivr.net/gh/coppermare/avatarverse";
 
-function placeholderApiUrl(category: string, id: number): string {
-  return `/api/avatars/${category}/${id}`;
+function avatarUrl(category: string, filename: string, tag = "main"): string {
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return `/api/avatars/${category}/${filename}`;
+  }
+  return `${CDN_BASE}@${tag}/avatars/${category}/${filename}`;
 }
 
-function placeholderCdnUrl(category: string, id: number, tag = "main"): string {
-  return `${CDN_BASE}@${tag}/avatars/${category}/${id}.png`;
+function cdnUrl(category: string, filename: string, tag = "main"): string {
+  return `${CDN_BASE}@${tag}/avatars/${category}/${filename}`;
 }
 
 function copyToClipboard(text: string): boolean {
@@ -90,7 +96,93 @@ const DownloadIcon = () => (
 );
 
 const iconButtonClass =
-  "inline-flex size-8 items-center justify-center rounded-md bg-zinc-800 text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex size-9 w-full min-w-0 items-center justify-center rounded-md bg-zinc-800 text-zinc-300 transition-colors hover:bg-zinc-700 hover:text-zinc-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50";
+
+const AvatarSkeleton = () => (
+  <div className="flex w-full flex-col gap-1.5">
+    <div className="avatar-tile aspect-square w-full animate-pulse rounded-lg bg-zinc-800" />
+    <div className="grid w-full grid-cols-2 gap-1">
+      <div className="h-9 w-full animate-pulse rounded-md bg-zinc-800" />
+      <div className="h-9 w-full animate-pulse rounded-md bg-zinc-800" />
+    </div>
+  </div>
+);
+
+function AvatarTile({
+  src,
+  alt,
+  copyUrl,
+  displayUrl,
+  filename,
+  eagerLoad,
+}: {
+  src: string;
+  alt: string;
+  copyUrl: string;
+  displayUrl: string;
+  filename: string;
+  eagerLoad: boolean;
+}) {
+  const [loaded, setLoaded] = useState(false);
+
+  return (
+    <div className="flex w-full flex-col gap-1.5">
+      <div className="avatar-tile relative aspect-square w-full overflow-hidden rounded-lg">
+        {!loaded && (
+          <div
+            className="absolute inset-0 animate-pulse bg-zinc-800"
+            aria-hidden
+          />
+        )}
+        <img
+          src={src}
+          alt={alt}
+          width={96}
+          height={96}
+          loading={eagerLoad ? "eager" : "lazy"}
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+          className={`aspect-square w-full rounded-lg object-cover transition-opacity duration-200 ${
+            loaded ? "opacity-100" : "opacity-0"
+          }`}
+        />
+      </div>
+      <div className="grid w-full grid-cols-2 gap-1">
+        <CopyButton url={copyUrl} />
+        <DownloadButton url={displayUrl} filename={filename} />
+      </div>
+    </div>
+  );
+}
+
+const NPM_COMMAND = "npm install avatarsverse";
+
+function NpmCopyButton() {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(async (e: React.MouseEvent) => {
+    e.preventDefault();
+    try {
+      await navigator.clipboard.writeText(NPM_COMMAND);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  return (
+    <button
+      type="button"
+      onClick={handleCopy}
+      className="rounded-md p-2 text-zinc-500 transition-colors hover:bg-zinc-800/50 hover:text-zinc-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      title="Copy command"
+      aria-label={copied ? "Copied" : "Copy command"}
+    >
+      {copied ? <CheckIcon /> : <CopyIcon />}
+    </button>
+  );
+}
 
 function CopyButton({ url }: { url: string }) {
   const [copied, setCopied] = useState(false);
@@ -140,66 +232,110 @@ function DownloadButton({
   );
 }
 
+type CategoriesData = Record<string, string[]>;
+
 export default function HomePage() {
+  const [categories, setCategories] = useState<CategoriesData>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/avatars")
+      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Failed to load"))))
+      .then((data: { categories: CategoriesData }) => setCategories(data.categories ?? {}))
+      .catch(() => setError("Could not load avatars"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const categoryEntries = Object.entries(categories).sort(([a], [b]) =>
+    a.localeCompare(b)
+  );
+  const totalCount = categoryEntries.reduce(
+    (sum, [, files]) => sum + files.length,
+    0
+  );
+
   return (
     <div className="flex min-h-screen flex-col">
+      <Header />
       <main className="flex-1">
-        <div className="mx-auto w-full max-w-4xl px-4 py-12 sm:px-6 sm:py-16 lg:px-8">
-          <header className="mb-14 text-left">
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-100 sm:text-4xl">
-              Avatarverse
-            </h1>
-            <p className="mt-3 text-lg text-zinc-400">
-              Deterministic profile avatars. Same seed, same avatar. Every time.
-            </p>
-          </header>
+        <div className="container-main py-12 sm:py-16">
+          <h1 className="mb-4 text-2xl font-semibold text-zinc-200 sm:text-3xl">
+            {loading
+              ? "Generate unique profile avatars"
+              : `${totalCount.toLocaleString()} profile avatars ready to use`}
+            {loading && (
+              <span className="font-normal text-zinc-500"> Loading...</span>
+            )}
+          </h1>
+          <p className="mb-8 max-w-3xl text-lg text-zinc-400">
+            Avatarverse is an open-source library that generates deterministic avatar URLs from usernames, emails, or any random strings. Same seed, same avatar. Every time. Perfect for developers seeking a modern, scalable solution to enhance user profiles without the complexity of managing image uploads or dealing with generic placeholder icons.
+          </p>
 
-          <section className="space-y-8">
-            <div>
-              <h2 className="text-lg font-semibold text-zinc-100">
-                Avatar Pack
-              </h2>
-              <p className="mt-1 text-sm text-zinc-400">
-                Pre-made PNG avatars. Copy the URL for any avatar to use in your
-                app.
-              </p>
-            </div>
+          <div className="mb-12 inline-flex w-fit items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3">
+            <pre className="flex-1 text-sm text-zinc-300">
+              <code>npm install avatarsverse</code>
+            </pre>
+            <NpmCopyButton />
+          </div>
 
-            <div className="grid grid-cols-5 gap-3 sm:grid-cols-8">
-              {Array.from({ length: VOXEL_COUNT }, (_, i) => {
-                const id = i + 1;
-                const url = placeholderCdnUrl("voxel", id);
-                const apiUrl = placeholderApiUrl("voxel", id);
+          <section className="space-y-12">
+            {loading ? (
+              <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                {Array.from({ length: 24 }, (_, i) => (
+                  <AvatarSkeleton key={i} />
+                ))}
+              </div>
+            ) : error ? (
+              <p className="text-sm text-zinc-500">{error}</p>
+            ) : categoryEntries.length === 0 ? (
+              <p className="text-sm text-zinc-500">No avatars found.</p>
+            ) : (
+              categoryEntries.map(([category, files]) => {
+                const uniqueFiles = [...new Set(files)];
                 return (
-                  <div
-                    key={id}
-                    className="flex flex-col items-center gap-1.5"
-                  >
-                    <img
-                      src={apiUrl}
-                      alt={`Voxel avatar ${id}`}
-                      width={64}
-                      height={64}
-                      className="aspect-square w-full rounded-lg object-cover"
-                    />
-                    <div className="flex items-center gap-1">
-                      <CopyButton url={url} />
-                      <DownloadButton
-                        url={apiUrl}
-                        filename={`avatar-${id}.png`}
-                      />
-                    </div>
+                  <div key={category} className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+                    {uniqueFiles.map((filename, i) => {
+                      const displayUrl = avatarUrl(category, filename);
+                      const src = `${displayUrl}${displayUrl.includes("?") ? "&" : "?"}v=${encodeURIComponent(filename)}`;
+                      const copyUrl = cdnUrl(category, filename);
+                      const label = filename.replace(/\.[^.]+$/, "");
+                      const eagerLoad =
+                        categoryEntries.findIndex(([c]) => c === category) ===
+                          0 && i < ABOVE_FOLD_COUNT;
+                      return (
+                        <AvatarTile
+                          key={`${category}-${filename}`}
+                          src={src}
+                          alt={`${category} avatar ${label}`}
+                          copyUrl={copyUrl}
+                          displayUrl={displayUrl}
+                          filename={filename}
+                          eagerLoad={eagerLoad}
+                        />
+                      );
+                    })}
                   </div>
                 );
-              })}
-            </div>
+              })
+            )}
           </section>
         </div>
       </main>
 
-      <footer className="mt-auto border-t border-zinc-800 bg-zinc-900/50 px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mx-auto flex max-w-4xl flex-col items-center justify-between gap-4 text-sm text-zinc-400 sm:flex-row">
-          <span>Avatarverse &middot; MIT License</span>
+      <footer className="mt-auto border-t border-zinc-800 bg-zinc-900/50 py-8">
+        <div className="container-main flex flex-col items-center justify-between gap-4 text-sm text-zinc-400 sm:flex-row">
+          <span>
+            All rights reserved © 2026. Made by{" "}
+            <a
+              href="https://kristikumrija.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline transition-colors hover:text-zinc-300"
+            >
+              Kristi Kumrija
+            </a>
+          </span>
           <a
             href="https://github.com/coppermare/avatarverse"
             target="_blank"

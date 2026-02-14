@@ -6,6 +6,7 @@
     "declaration": true,
     "declarationMap": true,
     "noEmit": false,
+    "incremental": false,
     "module": "ES2020",
     "moduleResolution": "node",
     "target": "ES2020",

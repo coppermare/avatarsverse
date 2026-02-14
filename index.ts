@@ -5,6 +5,7 @@
  * @packageDocumentation
  */
 
+import { AVATAR_MANIFEST } from "./avatar-manifest";
 const CDN_BASE = "https://cdn.jsdelivr.net/gh/coppermare/avatarverse";
 
 /**
@@ -30,15 +31,34 @@ export function cyrb53(str: string, seed = 0): number {
  *
  * @param seed - Any string (username, email, ID)
  * @param category - Avatar category (default: "voxel")
- * @param total - Number of avatars in category (default: 15)
+ * @param total - Optional explicit numeric pool size (legacy mode uses .png URLs)
  * @param tag - jsDelivr tag: "main" for latest, or "1.0.0" for pinned release
  */
 export function avatarUrl(
   seed: string,
   category = "voxel",
-  total = 15,
+  total?: number,
   tag = "main"
 ): string {
-  const n = (cyrb53(seed) % total) + 1;
-  return `${CDN_BASE}@${tag}/avatars/${category}/${n}.png`;
+  if (!seed) {
+    throw new Error("avatarUrl: `seed` is required.");
+  }
+
+  const manifestEntry = AVATAR_MANIFEST[category];
+  const files = manifestEntry?.files ?? [];
+
+  if (typeof total === "number") {
+    if (!Number.isInteger(total) || total <= 0) {
+      throw new Error("avatarUrl: `total` must be a positive integer.");
+    }
+    const n = (cyrb53(seed) % total) + 1;
+    return `${CDN_BASE}@${tag}/avatars/${category}/${n}.png`;
+  }
+
+  if (files.length > 0) {
+    const filename = files[cyrb53(seed) % files.length];
+    return `${CDN_BASE}@${tag}/avatars/${category}/${filename}`;
+  }
+
+  return `${CDN_BASE}@${tag}/avatars/${category}/1.png`;
 }

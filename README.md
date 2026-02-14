@@ -2,7 +2,7 @@
 
 Deterministic profile avatar library. Same seed, same avatar. Every time.
 
-Pre-made voxel-style PNG avatars for mockups, prototypes, and placeholders. Use any string as a seed (username, email, ID) and get the same avatar URL across all platforms.
+Pre-made voxel-style avatars for mockups, prototypes, and placeholders. Use any string as a seed (username, email, ID) and get the same avatar URL across all platforms.
 
 ---
 
@@ -21,20 +21,20 @@ Use the avatar URL directly in an `<img>` tag:
 />
 ```
 
-Replace `1` with `1`–`15` for different avatars. Use `@main` for latest, or `@1.0.0` to pin to a release.
+Replace the filename with any entry from `avatars/avatars.json`. Use `@main` for latest, or `@1.0.0` (recommended) to pin to a release.
 
 ### 2. NPM package (seed → URL)
 
 ```bash
-npm install avatarverse
+npm install avatarsverse
 ```
 
 ```javascript
-import { avatarUrl } from "avatarverse";
+import { avatarUrl } from "avatarsverse";
 
 // Same seed always returns the same URL
 const url = avatarUrl("alice@example.com");
-// → https://cdn.jsdelivr.net/gh/coppermare/avatarverse@main/avatars/voxel/7.png
+// -> https://cdn.jsdelivr.net/gh/coppermare/avatarverse@main/avatars/voxel/<deterministic-file>
 ```
 
 ```jsx
@@ -55,12 +55,65 @@ const url = avatarUrl("alice@example.com");
 
 Get a deterministic avatar URL from a seed.
 
-| Parameter | Type   | Default  | Description                                  |
-|-----------|--------|----------|----------------------------------------------|
-| `seed`    | string | required | Any string (username, email, ID)              |
-| `category`| string | `"voxel"`| Avatar category                               |
-| `total`   | number | `15`     | Number of avatars in category                 |
-| `tag`     | string | `"main"` | jsDelivr tag: `"main"` or release e.g. `"1.0.0"` |
+| Parameter | Type   | Default  | Description |
+|-----------|--------|----------|-------------|
+| `seed`    | string | required | Any string (username, email, ID) |
+| `category`| string | `"voxel"`| Avatar category |
+| `total`   | number | `undefined` | Optional legacy mode. If provided, URL format is `{n}.png` from `1..total`. If omitted, Avatarverse uses the built-in manifest and returns a real filename with extension. |
+| `tag`     | string | `"main"` | jsDelivr tag: `"main"` or pinned release such as `"1.0.0"` |
+
+```ts
+import { avatarUrl } from "avatarsverse";
+
+// Recommended: manifest-aware mode (safe with mixed extensions)
+avatarUrl("alice@example.com");
+// -> https://cdn.jsdelivr.net/gh/coppermare/avatarverse@main/avatars/voxel/148.jpeg
+
+// Legacy explicit pool mode
+avatarUrl("alice@example.com", "voxel", 15, "1.0.0");
+// -> https://cdn.jsdelivr.net/gh/coppermare/avatarverse@1.0.0/avatars/voxel/7.png
+```
+
+---
+
+## Avatar Files (for maintainers)
+
+- Avatars live under `avatars/{category}/` (currently `avatars/voxel/`).
+- Supported file extensions: `.png`, `.jpg`, `.jpeg`.
+- Use numeric file names where possible (`1.png`, `2.jpeg`, `3.png`, ...).
+- After adding/removing avatar files, always run:
+
+```bash
+npm run generate-avatars
+```
+
+This updates:
+- `avatars/avatars.json` (runtime/public manifest)
+- `avatar-manifest.ts` (library build-time manifest)
+
+---
+
+## HTTP API (for external apps)
+
+Run locally (`npm run dev`) or deploy the Next app.
+
+- `GET /api/avatars`
+  - Returns `{ categories: { [category]: string[] } }`
+- `GET /api/avatars/{category}`
+  - Returns `{ files: string[] }`
+- `GET /api/avatars/{category}/{id}`
+  - Returns image binary (supports `.png`, `.jpg`, `.jpeg` and id without extension)
+
+All routes include CORS headers and structured JSON errors:
+
+```json
+{
+  "error": {
+    "code": "not_found",
+    "message": "Avatar not found."
+  }
+}
+```
 
 ---
 
@@ -77,12 +130,22 @@ Open http://localhost:3000
 
 ---
 
-## Avatars Pack
+## Development Checklist
 
-Pre-made PNG avatars in `avatars/voxel/` (1.png–15.png).
+Before opening a PR or publishing:
 
-- **Structure**: [avatars/README.md](avatars/README.md)
-- **Naming**: [avatars/NAMING_EXAMPLES.md](avatars/NAMING_EXAMPLES.md)
+- `npm run generate-avatars`
+- `npm run lint`
+- `npm test`
+- `npm run build:lib`
+- `npm run build`
+
+---
+
+## Contributing & Security
+
+- Open bugs/features in GitHub Issues.
+- For security vulnerabilities, do not open public issues. Use GitHub Security Advisories for private reporting.
 
 ---
 
