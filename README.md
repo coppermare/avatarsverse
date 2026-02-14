@@ -1,5 +1,7 @@
 # Avatarverse
 
+[![npm](https://img.shields.io/npm/v/avatarsverse)](https://www.npmjs.com/package/avatarsverse)
+
 Deterministic profile avatar library. Same seed, same avatar. Every time.
 
 Pre-made voxel-style avatars for mockups, prototypes, and placeholders. Use any string as a seed (username, email, ID) and get the same avatar URL across all platforms.
