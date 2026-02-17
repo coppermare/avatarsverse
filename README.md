@@ -1,4 +1,4 @@
-# Avatarverse
+# Avatarsverse
 
 [![npm](https://img.shields.io/npm/v/avatarsverse)](https://www.npmjs.com/package/avatarsverse)
 
@@ -16,7 +16,7 @@ Use the avatar URL directly in an `<img>` tag:
 
 ```html
 <img
-  src="https://cdn.jsdelivr.net/gh/coppermare/avatarverse@main/avatars/voxel/1.png"
+  src="https://cdn.jsdelivr.net/gh/coppermare/avatarsverse@main/avatars/voxel/1.png"
   alt="Avatar"
   width="64"
   height="64"
@@ -36,7 +36,7 @@ import { avatarUrl } from "avatarsverse";
 
 // Same seed always returns the same URL
 const url = avatarUrl("alice@example.com");
-// -> https://cdn.jsdelivr.net/gh/coppermare/avatarverse@main/avatars/voxel/<deterministic-file>
+// -> https://cdn.jsdelivr.net/gh/coppermare/avatarsverse@main/avatars/voxel/<deterministic-file>
 ```
 
 ```jsx
@@ -61,7 +61,7 @@ Get a deterministic avatar URL from a seed.
 |-----------|--------|----------|-------------|
 | `seed`    | string | required | Any string (username, email, ID) |
 | `category`| string | `"voxel"`| Avatar category |
-| `total`   | number | `undefined` | Optional legacy mode. If provided, URL format is `{n}.png` from `1..total`. If omitted, Avatarverse uses the built-in manifest and returns a real filename with extension. |
+| `total`   | number | `undefined` | Optional legacy mode. If provided, URL format is `{n}.png` from `1..total`. If omitted, Avatarsverse uses the built-in manifest and returns a real filename with extension. |
 | `tag`     | string | `"main"` | jsDelivr tag: `"main"` or pinned release such as `"1.0.0"` |
 
 ```ts
@@ -69,11 +69,11 @@ import { avatarUrl } from "avatarsverse";
 
 // Recommended: manifest-aware mode (safe with mixed extensions)
 avatarUrl("alice@example.com");
-// -> https://cdn.jsdelivr.net/gh/coppermare/avatarverse@main/avatars/voxel/148.jpeg
+// -> https://cdn.jsdelivr.net/gh/coppermare/avatarsverse@main/avatars/voxel/148.jpeg
 
 // Legacy explicit pool mode
 avatarUrl("alice@example.com", "voxel", 15, "1.0.0");
-// -> https://cdn.jsdelivr.net/gh/coppermare/avatarverse@1.0.0/avatars/voxel/7.png
+// -> https://cdn.jsdelivr.net/gh/coppermare/avatarsverse@1.0.0/avatars/voxel/7.png
 ```
 
 ---

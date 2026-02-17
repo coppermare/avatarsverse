@@ -10,17 +10,17 @@ export function Header() {
         <Link
           href="/"
           className="flex items-center gap-2 transition-opacity hover:opacity-90"
-          aria-label="Avatarverse home"
+          aria-label="Avatarsverse home"
         >
           <Image
             src={logo}
-            alt="Avatarverse"
+            alt="Avatarsverse"
             width={36}
             height={36}
             className="size-9"
           />
           <span className="text-xl font-bold tracking-tight text-zinc-100 sm:text-2xl">
-            Avatarverse
+            Avatarsverse
           </span>
         </Link>
         <nav className="flex items-center gap-4">
@@ -31,7 +31,7 @@ export function Header() {
             Docs
           </a>
           <a
-            href="https://github.com/coppermare/avatarverse"
+            href="https://github.com/coppermare/avatarsverse"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex shrink-0 items-center gap-2 rounded-md bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-700 hover:text-zinc-100"

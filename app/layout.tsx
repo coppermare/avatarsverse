@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Avatarverse - Profile Avatar Library",
+  title: "Avatarsverse - Profile Avatar Library",
   description: "Deterministic, seed-based avatar library for the web",
   icons: {
     icon: "/icon.png",

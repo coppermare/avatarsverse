@@ -6,7 +6,7 @@ import { Header } from "./components/Header";
 
 /** Images above this index load eagerly for fast LCP; rest use lazy loading */
 const ABOVE_FOLD_COUNT = 8;
-const CDN_BASE = "https://cdn.jsdelivr.net/gh/coppermare/avatarverse";
+const CDN_BASE = "https://cdn.jsdelivr.net/gh/coppermare/avatarsverse";
 
 function avatarUrl(category: string, filename: string, tag = "main"): string {
   if (typeof window !== "undefined" && window.location.hostname === "localhost") {
@@ -269,7 +269,7 @@ export default function HomePage() {
             )}
           </h1>
           <p className="mb-8 max-w-3xl text-lg text-zinc-400">
-            Avatarverse is an open-source library that generates deterministic avatar URLs from usernames, emails, or any random strings. Same seed, same avatar. Every time. Perfect for developers seeking a modern, scalable solution to enhance user profiles without the complexity of managing image uploads or dealing with generic placeholder icons.
+            Avatarsverse is an open-source library that generates deterministic avatar URLs from usernames, emails, or any random strings. Same seed, same avatar. Every time. Perfect for developers seeking a modern, scalable solution to enhance user profiles without the complexity of managing image uploads or dealing with generic placeholder icons.
           </p>
 
           <div className="mb-12 inline-flex w-fit items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3">
@@ -337,7 +337,7 @@ export default function HomePage() {
             </a>
           </span>
           <a
-            href="https://github.com/coppermare/avatarverse"
+            href="https://github.com/coppermare/avatarsverse"
             target="_blank"
             rel="noopener noreferrer"
             className="transition-colors hover:text-zinc-300"

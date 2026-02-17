@@ -1,12 +1,12 @@
 /**
- * Avatarverse - Deterministic profile avatar library
+ * Avatarsverse - Deterministic profile avatar library
  * Same seed, same avatar. Every time.
  *
  * @packageDocumentation
  */
 
 import { AVATAR_MANIFEST } from "./avatar-manifest";
-const CDN_BASE = "https://cdn.jsdelivr.net/gh/coppermare/avatarverse";
+const CDN_BASE = "https://cdn.jsdelivr.net/gh/coppermare/avatarsverse";
 
 /**
  * Cyrb53 hash for even distribution of seeds to avatar indices.

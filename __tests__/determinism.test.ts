@@ -18,7 +18,7 @@ describe("avatarUrl", () => {
   it("returns valid jsDelivr CDN URL", () => {
     const url = avatarUrl("user", "voxel", undefined, "main");
     expect(url).toMatch(
-      /^https:\/\/cdn\.jsdelivr\.net\/gh\/coppermare\/avatarverse@main\/avatars\/voxel\/[^/]+\.(png|jpe?g)$/
+      /^https:\/\/cdn\.jsdelivr\.net\/gh\/coppermare\/avatarsverse@main\/avatars\/voxel\/[^/]+\.(png|jpe?g)$/
     );
   });
 

@@ -38,12 +38,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/coppermare/avatarverse.git"
+    "url": "git+https://github.com/coppermare/avatarsverse.git"
   },
   "bugs": {
-    "url": "https://github.com/coppermare/avatarverse/issues"
+    "url": "https://github.com/coppermare/avatarsverse/issues"
   },
-  "homepage": "https://github.com/coppermare/avatarverse#readme",
+  "homepage": "https://github.com/coppermare/avatarsverse#readme",
   "license": "MIT",
   "author": "Kristi Kumrija",
   "engines": {
