@@ -15,7 +15,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
 
       - name: Install dependencies
@@ -24,11 +24,8 @@ jobs:
       - name: Generate avatar manifest
         run: npm run generate-avatars
 
-      - name: Build library
-        run: npm run build:lib
+      - name: Verify generated files are current
+        run: git diff --exit-code -- avatars/avatars.json avatar-manifest.ts
 
-      - name: Build Next.js app
-        run: npm run build
-
-      - name: Run tests
-        run: npm test
+      - name: Check project
+        run: npm run check

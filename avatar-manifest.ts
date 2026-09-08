@@ -7,7 +7,7 @@ export type AvatarManifest = Record<
 >;
 
 /**
- * Generated from avatars/avatars.json.
+ * Generated from the image files under avatars/.
  * Run `npm run generate-avatars` after changing avatar assets.
  */
 export const AVATAR_MANIFEST: AvatarManifest = {

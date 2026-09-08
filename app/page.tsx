@@ -1,15 +1,24 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
-import { useState, useCallback, useEffect } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  AvatarLightbox,
+  type LightboxAvatar,
+} from "./components/AvatarLightbox";
+import { Footer } from "./components/Footer";
 import { Header } from "./components/Header";
 
 /** Images above this index load eagerly for fast LCP; rest use lazy loading */
 const ABOVE_FOLD_COUNT = 8;
+const AVATAR_BATCH_SIZE = 24;
 const CDN_BASE = "https://cdn.jsdelivr.net/gh/coppermare/avatarsverse";
 
 function avatarUrl(category: string, filename: string, tag = "main"): string {
-  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+  if (
+    typeof window !== "undefined" &&
+    window.location.hostname === "localhost"
+  ) {
     return `/api/avatars/${category}/${filename}`;
   }
   return `${CDN_BASE}@${tag}/avatars/${category}/${filename}`;
@@ -21,7 +30,9 @@ function cdnUrl(category: string, filename: string, tag = "main"): string {
 
 function copyToClipboard(text: string): boolean {
   if (typeof window === "undefined") return false;
-  const fullUrl = text.startsWith("http") ? text : `${window.location.origin}${text}`;
+  const fullUrl = text.startsWith("http")
+    ? text
+    : `${window.location.origin}${text}`;
 
   const el = document.createElement("input");
   el.value = fullUrl;
@@ -112,44 +123,52 @@ function AvatarTile({
   src,
   alt,
   copyUrl,
-  displayUrl,
+  category,
   filename,
   eagerLoad,
+  onOpen,
 }: {
   src: string;
   alt: string;
   copyUrl: string;
-  displayUrl: string;
+  category: string;
   filename: string;
   eagerLoad: boolean;
+  onOpen: () => void;
 }) {
   const [loaded, setLoaded] = useState(false);
 
   return (
     <div className="flex w-full flex-col gap-1.5">
-      <div className="avatar-tile relative aspect-square w-full overflow-hidden rounded-lg">
+      <button
+        aria-label={`Open ${alt} preview`}
+        className="avatar-tile relative aspect-square w-full overflow-hidden rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        onClick={onOpen}
+        type="button"
+      >
         {!loaded && (
           <div
             className="absolute inset-0 animate-pulse bg-zinc-800"
             aria-hidden
           />
         )}
-        <img
+        <Image
           src={src}
           alt={alt}
           width={96}
           height={96}
-          loading={eagerLoad ? "eager" : "lazy"}
-          decoding="async"
+          priority={eagerLoad}
+          sizes="(min-width: 1024px) 120px, (min-width: 768px) 17vw, (min-width: 640px) 22vw, 30vw"
+          unoptimized
           onLoad={() => setLoaded(true)}
           className={`aspect-square w-full rounded-lg object-cover transition-opacity duration-200 ${
             loaded ? "opacity-100" : "opacity-0"
           }`}
         />
-      </div>
+      </button>
       <div className="grid w-full grid-cols-2 gap-1">
         <CopyButton url={copyUrl} />
-        <DownloadButton url={displayUrl} filename={filename} />
+        <DownloadButton category={category} filename={filename} />
       </div>
     </div>
   );
@@ -213,15 +232,17 @@ function CopyButton({ url }: { url: string }) {
 }
 
 function DownloadButton({
-  url,
+  category,
   filename,
 }: {
-  url: string;
+  category: string;
   filename: string;
 }) {
+  const downloadUrl = `/api/avatars/${encodeURIComponent(category)}/${encodeURIComponent(filename)}?download=1`;
+
   return (
     <a
-      href={url}
+      href={downloadUrl}
       download={filename}
       className={iconButtonClass}
       title="Download"
@@ -234,52 +255,146 @@ function DownloadButton({
 
 type CategoriesData = Record<string, string[]>;
 
+interface GalleryAvatar extends LightboxAvatar {
+  category: string;
+  copyUrl: string;
+  filename: string;
+}
+
+function LazyInfiniteAvatarGrid({
+  avatars,
+  onOpen,
+}: {
+  avatars: GalleryAvatar[];
+  onOpen: (index: number) => void;
+}) {
+  const [visibleCount, setVisibleCount] = useState(AVATAR_BATCH_SIZE);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+  const hasMore = visibleCount < avatars.length;
+
+  useEffect(() => {
+    const loadMoreElement = loadMoreRef.current;
+    if (!hasMore || !loadMoreElement) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) return;
+
+        observer.disconnect();
+        setVisibleCount((count) =>
+          Math.min(count + AVATAR_BATCH_SIZE, avatars.length)
+        );
+      },
+      { rootMargin: "400px 0px" }
+    );
+
+    observer.observe(loadMoreElement);
+    return () => observer.disconnect();
+  }, [avatars.length, hasMore, visibleCount]);
+
+  return (
+    <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+      {avatars.slice(0, visibleCount).map((avatar, index) => (
+        <AvatarTile
+          alt={avatar.alt}
+          category={avatar.category}
+          copyUrl={avatar.copyUrl}
+          eagerLoad={index < ABOVE_FOLD_COUNT}
+          filename={avatar.filename}
+          key={`${avatar.category}-${avatar.filename}`}
+          onOpen={() => onOpen(index)}
+          src={avatar.src}
+        />
+      ))}
+
+      {hasMore && (
+        <>
+          {Array.from({ length: 6 }, (_, index) => (
+            <AvatarSkeleton key={`loading-${index}`} />
+          ))}
+          <div aria-hidden className="col-span-full h-px" ref={loadMoreRef} />
+          <p aria-live="polite" className="sr-only">
+            Showing {visibleCount} of {avatars.length} avatars
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [categories, setCategories] = useState<CategoriesData>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedAvatarIndex, setSelectedAvatarIndex] = useState<number | null>(
+    null
+  );
 
   useEffect(() => {
     fetch("/api/avatars")
-      .then((res) => (res.ok ? res.json() : Promise.reject(new Error("Failed to load"))))
-      .then((data: { categories: CategoriesData }) => setCategories(data.categories ?? {}))
+      .then((res) =>
+        res.ok ? res.json() : Promise.reject(new Error("Failed to load"))
+      )
+      .then((data: { categories: CategoriesData }) =>
+        setCategories(data.categories ?? {})
+      )
       .catch(() => setError("Could not load avatars"))
       .finally(() => setLoading(false));
   }, []);
 
-  const categoryEntries = Object.entries(categories).sort(([a], [b]) =>
-    a.localeCompare(b)
+  const avatars = useMemo<GalleryAvatar[]>(
+    () =>
+      Object.entries(categories)
+        .sort(([a], [b]) => a.localeCompare(b))
+        .flatMap(([category, files]) =>
+          files.map((filename) => {
+            const displayUrl = avatarUrl(category, filename);
+            const label = filename.replace(/\.[^.]+$/, "");
+
+            return {
+              alt: `${category} avatar ${label}`,
+              category,
+              copyUrl: cdnUrl(category, filename),
+              filename,
+              src: `${displayUrl}?v=${encodeURIComponent(filename)}`,
+            };
+          })
+        ),
+    [categories]
   );
-  const totalCount = categoryEntries.reduce(
-    (sum, [, files]) => sum + files.length,
-    0
-  );
+  const closeLightbox = useCallback(() => setSelectedAvatarIndex(null), []);
 
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
-        <div className="container-main py-12 sm:py-16">
-          <h1 className="mb-4 text-2xl font-semibold text-zinc-200 sm:text-3xl">
-            {loading
-              ? "Generate unique profile avatars"
-              : `${totalCount.toLocaleString()} profile avatars ready to use`}
-            {loading && (
-              <span className="font-normal text-zinc-500"> Loading...</span>
-            )}
-          </h1>
-          <p className="mb-8 max-w-3xl text-lg text-zinc-400">
-            Avatarsverse is an open-source library that generates deterministic avatar URLs from usernames, emails, or any random strings. Same seed, same avatar. Every time. Perfect for developers seeking a modern, scalable solution to enhance user profiles without the complexity of managing image uploads or dealing with generic placeholder icons.
-          </p>
+        <section>
+          <div className="container-main py-14 sm:py-20">
+            <h1 className="mb-4 max-w-2xl text-3xl font-semibold tracking-tight text-zinc-100 sm:text-4xl">
+              Deterministic avatars, ready to use.
+            </h1>
+            <p className="mb-8 max-w-2xl text-base leading-relaxed text-zinc-400 sm:text-lg">
+              Choose from a growing collection of voxel avatars, or use any
+              string as a seed to get the same result every time.
+            </p>
 
-          <div className="mb-12 inline-flex w-fit items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3">
-            <pre className="flex-1 text-sm text-zinc-300">
-              <code>npm install avatarsverse</code>
-            </pre>
-            <NpmCopyButton />
+            <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-zinc-800 bg-zinc-950 px-4 py-3">
+              <pre className="flex-1 text-sm text-zinc-300">
+                <code>npm install avatarsverse</code>
+              </pre>
+              <NpmCopyButton />
+            </div>
           </div>
+        </section>
 
-          <section className="space-y-12">
+        <section
+          aria-labelledby="avatar-library-title"
+          className="bg-zinc-950/30"
+        >
+          <div className="container-main py-12 sm:py-16">
+            <h2 className="sr-only" id="avatar-library-title">
+              Avatar library
+            </h2>
             {loading ? (
               <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
                 {Array.from({ length: 24 }, (_, i) => (
@@ -288,64 +403,27 @@ export default function HomePage() {
               </div>
             ) : error ? (
               <p className="text-sm text-zinc-500">{error}</p>
-            ) : categoryEntries.length === 0 ? (
+            ) : avatars.length === 0 ? (
               <p className="text-sm text-zinc-500">No avatars found.</p>
             ) : (
-              categoryEntries.map(([category, files]) => {
-                const uniqueFiles = [...new Set(files)];
-                return (
-                  <div key={category} className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-                    {uniqueFiles.map((filename, i) => {
-                      const displayUrl = avatarUrl(category, filename);
-                      const src = `${displayUrl}${displayUrl.includes("?") ? "&" : "?"}v=${encodeURIComponent(filename)}`;
-                      const copyUrl = cdnUrl(category, filename);
-                      const label = filename.replace(/\.[^.]+$/, "");
-                      const eagerLoad =
-                        categoryEntries.findIndex(([c]) => c === category) ===
-                          0 && i < ABOVE_FOLD_COUNT;
-                      return (
-                        <AvatarTile
-                          key={`${category}-${filename}`}
-                          src={src}
-                          alt={`${category} avatar ${label}`}
-                          copyUrl={copyUrl}
-                          displayUrl={displayUrl}
-                          filename={filename}
-                          eagerLoad={eagerLoad}
-                        />
-                      );
-                    })}
-                  </div>
-                );
-              })
+              <LazyInfiniteAvatarGrid
+                avatars={avatars}
+                onOpen={setSelectedAvatarIndex}
+              />
             )}
-          </section>
-        </div>
+          </div>
+        </section>
       </main>
 
-      <footer className="mt-auto border-t border-zinc-800 bg-zinc-900/50 py-8">
-        <div className="container-main flex flex-col items-center justify-between gap-4 text-sm text-zinc-400 sm:flex-row">
-          <span>
-            All rights reserved © 2026. Made by{" "}
-            <a
-              href="https://kristikumrija.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline transition-colors hover:text-zinc-300"
-            >
-              Kristi Kumrija
-            </a>
-          </span>
-          <a
-            href="https://github.com/coppermare/avatarsverse"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="transition-colors hover:text-zinc-300"
-          >
-            GitHub
-          </a>
-        </div>
-      </footer>
+      <Footer />
+
+      {selectedAvatarIndex !== null && (
+        <AvatarLightbox
+          avatars={avatars}
+          initialIndex={selectedAvatarIndex}
+          onClose={closeLightbox}
+        />
+      )}
     </div>
   );
 }

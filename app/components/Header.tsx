@@ -24,12 +24,12 @@ export function Header() {
           </span>
         </Link>
         <nav className="flex items-center gap-4">
-          <a
+          <Link
             href="/docs"
             className="text-sm font-medium text-zinc-400 transition-colors hover:text-zinc-200"
           >
             Docs
-          </a>
+          </Link>
           <a
             href="https://github.com/coppermare/avatarsverse"
             target="_blank"
