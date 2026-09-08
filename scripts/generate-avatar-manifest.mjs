@@ -34,11 +34,13 @@ for (const entry of entries) {
 
   console.log(`${entry.name}: ${imageFiles.length} avatars`);
   if (imageFiles.length > 0) {
-    console.log(`  ${imageFiles.slice(0, 5).join(", ")}${imageFiles.length > 5 ? "..." : ""}`);
+    console.log(
+      `  ${imageFiles.slice(0, 5).join(", ")}${imageFiles.length > 5 ? "..." : ""}`
+    );
   }
 }
 
-const manifestJson = JSON.stringify(manifest, null, 2);
+const manifestJson = `${JSON.stringify(manifest, null, 2)}\n`;
 const manifestTs = `export type AvatarManifest = Record<
   string,
   {
@@ -48,14 +50,16 @@ const manifestTs = `export type AvatarManifest = Record<
 >;
 
 /**
- * Generated from avatars/avatars.json.
+ * Generated from the image files under avatars/.
  * Run \`npm run generate-avatars\` after changing avatar assets.
  */
-export const AVATAR_MANIFEST: AvatarManifest = ${manifestJson};
+export const AVATAR_MANIFEST: AvatarManifest = ${manifestJson.trimEnd()};
 `;
 
 await writeFile(manifestPath, manifestJson);
 await writeFile(manifestTsPath, manifestTs);
 
 const total = Object.values(manifest).reduce((s, c) => s + c.count, 0);
-console.log(`\nUpdated avatars.json + avatar-manifest.ts: ${total} avatars across ${Object.keys(manifest).length} categories`);
+console.log(
+  `\nUpdated avatars.json + avatar-manifest.ts: ${total} avatars across ${Object.keys(manifest).length} categories`
+);

@@ -1,82 +1,45 @@
-import { NextRequest, NextResponse } from "next/server";
 import { readFile } from "fs/promises";
 import { join } from "path";
 
-const AVATARS_DIR = join(process.cwd(), "avatars");
-const IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg"] as const;
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-} as const;
+import {
+  CORS_HEADERS,
+  detectImageContentType,
+  errorResponse,
+  getAvatarFiles,
+  optionsResponse,
+} from "../../_shared";
 
-export async function OPTIONS() {
-  return new Response(null, {
-    status: 204,
-    headers: CORS_HEADERS,
-  });
-}
+const AVATARS_DIR = join(process.cwd(), "avatars");
+
+export const OPTIONS = optionsResponse;
 
 export async function GET(
-  request: NextRequest,
+  request: Request,
   { params }: { params: Promise<{ category: string; id: string }> }
 ) {
   const { category, id } = await params;
+  const files = getAvatarFiles(category);
 
-  if (!category || !id) {
-    return NextResponse.json(
-      { error: { code: "not_found", message: "Avatar not found." } },
-      {
-        status: 404,
-        headers: CORS_HEADERS,
-      }
-    );
+  if (!files || !/^[a-z0-9.-]+$/i.test(id)) {
+    return errorResponse("not_found", "Avatar not found.");
   }
 
-  const sanitizedCategory = category.replace(/[^a-z0-9-_]/gi, "");
-  const sanitizedId = id.replace(/[^a-z0-9.-]/gi, "");
-  if (!sanitizedCategory || !sanitizedId) {
-    return NextResponse.json(
-      { error: { code: "not_found", message: "Avatar not found." } },
-      {
-        status: 404,
-        headers: CORS_HEADERS,
-      }
-    );
-  }
+  const hasImageExtension = /\.(png|jpe?g)$/i.test(id);
+  const resolvedFilename = hasImageExtension
+    ? files.find((filename) => filename === id)
+    : files.find((filename) => filename.replace(/\.[^.]+$/, "") === id);
+
+  if (!resolvedFilename) return errorResponse("not_found", "Avatar not found.");
 
   try {
-    const hasImageExt = /\.(png|jpe?g)$/i.test(sanitizedId);
-    const candidateFilenames = hasImageExt
-      ? [sanitizedId]
-      : IMAGE_EXTENSIONS.map((ext) => `${sanitizedId}${ext}`);
+    const buffer = await readFile(
+      join(AVATARS_DIR, category, resolvedFilename)
+    );
+    const contentType = detectImageContentType(buffer);
 
-    let resolvedFilename: string | null = null;
-    let buffer: Buffer | null = null;
+    if (!contentType) return errorResponse("not_found", "Avatar not found.");
 
-    for (const candidate of candidateFilenames) {
-      try {
-        buffer = await readFile(join(AVATARS_DIR, sanitizedCategory, candidate));
-        resolvedFilename = candidate;
-        break;
-      } catch {
-        // Continue trying next extension candidate.
-      }
-    }
-
-    if (!buffer || !resolvedFilename) {
-      return NextResponse.json(
-        { error: { code: "not_found", message: "Avatar not found." } },
-        {
-          status: 404,
-          headers: CORS_HEADERS,
-        }
-      );
-    }
-
-    const contentType = resolvedFilename.toLowerCase().endsWith(".png")
-      ? "image/png"
-      : "image/jpeg";
+    const shouldDownload = new URL(request.url).searchParams.has("download");
 
     return new Response(new Uint8Array(buffer), {
       status: 200,
@@ -84,15 +47,12 @@ export async function GET(
         ...CORS_HEADERS,
         "Content-Type": contentType,
         "Cache-Control": "public, max-age=31536000, immutable",
+        ...(shouldDownload && {
+          "Content-Disposition": `attachment; filename="${resolvedFilename}"`,
+        }),
       },
     });
   } catch {
-    return NextResponse.json(
-      { error: { code: "not_found", message: "Avatar not found." } },
-      {
-        status: 404,
-        headers: CORS_HEADERS,
-      }
-    );
+    return errorResponse("not_found", "Avatar not found.");
   }
 }

@@ -16,14 +16,14 @@ Use the avatar URL directly in an `<img>` tag:
 
 ```html
 <img
-  src="https://cdn.jsdelivr.net/gh/coppermare/avatarsverse@main/avatars/voxel/1.png"
+  src="https://cdn.jsdelivr.net/gh/coppermare/avatarsverse@main/avatars/voxel/1.jpeg"
   alt="Avatar"
   width="64"
   height="64"
 />
 ```
 
-Replace the filename with any entry from `avatars/avatars.json`. Use `@main` for latest, or `@1.0.0` (recommended) to pin to a release.
+Replace the filename with any entry from `avatars/avatars.json`. `@main` tracks the latest repository state. For a stable production URL, replace it with an existing Git release tag.
 
 ### 2. NPM package (seed → URL)
 
@@ -49,6 +49,35 @@ const url = avatarUrl("alice@example.com");
 />
 ```
 
+### Next.js
+
+Allow jsDelivr when using the optimized Next.js Image component:
+
+```ts
+// next.config.ts
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [{ protocol: "https", hostname: "cdn.jsdelivr.net" }],
+  },
+};
+
+export default nextConfig;
+```
+
+```tsx
+import Image from "next/image";
+import { avatarUrl } from "avatarsverse";
+
+<Image
+  src={avatarUrl(user.id)}
+  alt={`Avatar for ${user.name}`}
+  width={64}
+  height={64}
+/>;
+```
+
 ---
 
 ## API Reference
@@ -57,12 +86,12 @@ const url = avatarUrl("alice@example.com");
 
 Get a deterministic avatar URL from a seed.
 
-| Parameter | Type   | Default  | Description |
-|-----------|--------|----------|-------------|
-| `seed`    | string | required | Any string (username, email, ID) |
-| `category`| string | `"voxel"`| Avatar category |
-| `total`   | number | `undefined` | Optional legacy mode. If provided, URL format is `{n}.png` from `1..total`. If omitted, Avatarsverse uses the built-in manifest and returns a real filename with extension. |
-| `tag`     | string | `"main"` | jsDelivr tag: `"main"` or pinned release such as `"1.0.0"` |
+| Parameter  | Type   | Default     | Description                                                                                |
+| ---------- | ------ | ----------- | ------------------------------------------------------------------------------------------ |
+| `seed`     | string | required    | Any string (username, email, ID)                                                           |
+| `category` | string | `"voxel"`   | Avatar category                                                                            |
+| `total`    | number | `undefined` | Optional pool-size limit. Selection uses the first `total` files in the category manifest. |
+| `tag`      | string | `"main"`    | jsDelivr branch or an existing Git release tag                                             |
 
 ```ts
 import { avatarUrl } from "avatarsverse";
@@ -71,10 +100,14 @@ import { avatarUrl } from "avatarsverse";
 avatarUrl("alice@example.com");
 // -> https://cdn.jsdelivr.net/gh/coppermare/avatarsverse@main/avatars/voxel/148.jpeg
 
-// Legacy explicit pool mode
-avatarUrl("alice@example.com", "voxel", 15, "1.0.0");
-// -> https://cdn.jsdelivr.net/gh/coppermare/avatarsverse@1.0.0/avatars/voxel/7.png
+// Optional explicit pool limit
+avatarUrl("alice@example.com", "voxel", 15, "<existing-release-tag>");
+// -> a deterministic URL from the first 15 voxel avatars
 ```
+
+### `cyrb53(value, seed?)`
+
+Returns the deterministic numeric hash used internally for avatar selection. The optional numeric seed defaults to `0`. Most applications should use `avatarUrl()` instead.
 
 ---
 
@@ -90,6 +123,7 @@ npm run generate-avatars
 ```
 
 This updates:
+
 - `avatars/avatars.json` (runtime/public manifest)
 - `avatar-manifest.ts` (library build-time manifest)
 
@@ -104,9 +138,23 @@ Run locally (`npm run dev`) or deploy the Next app.
 - `GET /api/avatars/{category}`
   - Returns `{ files: string[] }`
 - `GET /api/avatars/{category}/{id}`
-  - Returns image binary (supports `.png`, `.jpg`, `.jpeg` and id without extension)
+  - Returns image bytes with a detected PNG or JPEG content type.
+  - The ID may include `.png`, `.jpg`, or `.jpeg`, or omit the extension.
+  - Add `?download=1` to receive `Content-Disposition: attachment`.
 
-All routes include CORS headers and structured JSON errors:
+```javascript
+const categories = await fetch("/api/avatars").then((response) =>
+  response.json()
+);
+
+const image = await fetch("/api/avatars/voxel/1").then((response) =>
+  response.blob()
+);
+
+const downloadUrl = "/api/avatars/voxel/1?download=1";
+```
+
+All routes support `GET` and `OPTIONS` and include permissive CORS headers. Manifest responses use a five-minute public cache with stale revalidation; image responses use a one-year immutable cache. Missing categories and images return HTTP 404 with a structured JSON error:
 
 ```json
 {
@@ -137,10 +185,7 @@ Open http://localhost:3000
 Before opening a PR or publishing:
 
 - `npm run generate-avatars`
-- `npm run lint`
-- `npm test`
-- `npm run build:lib`
-- `npm run build`
+- `npm run check`
 
 ---
 
